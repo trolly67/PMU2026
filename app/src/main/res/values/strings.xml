@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Beatles</string>
+    <string name="hello_world">Hello World!</string>
+    <string name="open_registration">Регистрация игрока</string>
 </resources>
