@@ -5,20 +5,27 @@ import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import com.example.beatles.databinding.ActivityRegistrationBinding
-import java.time.Instant
-import java.time.ZoneId
+import java.time.LocalDate
 
 class RegistrationActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRegistrationBinding
+    private var selectedBirthDate: LocalDate? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegistrationBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        binding.birthDateCalendar.maxDate = System.currentTimeMillis()
+
         setupCourseSpinner()
         setupDifficultySeekBar()
+
+        binding.birthDateCalendar.setOnDateChangeListener { _, year, month, dayOfMonth ->
+            selectedBirthDate = LocalDate.of(year, month + 1, dayOfMonth)
+            android.util.Log.d("Registration", "Saved date: $selectedBirthDate")
+        }
 
         binding.submitButton.setOnClickListener {
             when (val result = readProfileFromForm()) {
@@ -70,11 +77,8 @@ class RegistrationActivity : AppCompatActivity() {
         val course = coursePosition + 1
 
         val difficulty = binding.difficultySeekBar.progress + 1
-
-        val millis = binding.birthDateCalendar.date
-        val birthDate = Instant.ofEpochMilli(millis)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
+        val birthDate = selectedBirthDate
+            ?: LocalDate.now()
 
         val zodiac = zodiacByDate(birthDate.dayOfMonth, birthDate.monthValue)
 
