@@ -15,48 +15,96 @@
             android:text="@string/registration_title"
             android:textSize="22sp"
             android:textStyle="bold"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp" />
 
-        <TextView ... android:text="@string/label_full_name"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_full_name" />
+
         <EditText
             android:id="@+id/fullNameInput"
-        ... />
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_full_name"
+            android:inputType="textPersonName"
+            android:layout_marginBottom="16dp" />
 
-        <TextView ... android:text="@string/label_gender"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_gender" />
+
         <RadioGroup
             android:id="@+id/genderGroup"
-        ... >
-        <RadioButton android:id="@+id/maleRadio" ... />
-        <RadioButton android:id="@+id/femaleRadio" ... />
-    </RadioGroup>
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
 
-    <TextView ... android:text="@string/label_course"/>
-    <Spinner
-        android:id="@+id/courseSpinner"
-    ... />
+            <RadioButton
+                android:id="@+id/maleRadio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/gender_male" />
 
-    <TextView
-        android:id="@+id/difficultyLabel"
-        android:text="@string/label_difficulty_default" />
-    <SeekBar
-        android:id="@+id/difficultySeekBar"
-        android:max="4"
-        android:progress="0"
-    ... />
+            <RadioButton
+                android:id="@+id/femaleRadio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="@string/gender_female" />
 
-    <TextView ... android:text="@string/label_birth_date"/>
-    <CalendarView
-        android:id="@+id/birthDateCalendar"
-    ... />
+        </RadioGroup>
 
-    <Button
-        android:id="@+id/submitButton"
-        android:text="@string/button_submit"
-    ... />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_course" />
 
-    <TextView
-        android:id="@+id/resultText"
-    ... />
+        <Spinner
+            android:id="@+id/courseSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
 
-</LinearLayout>
-    </ScrollView>
+        <TextView
+            android:id="@+id/difficultyLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_difficulty_default" />
+
+        <SeekBar
+            android:id="@+id/difficultySeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="4"
+            android:progress="0"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_birth_date" />
+
+        <CalendarView
+            android:id="@+id/birthDateCalendar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/submitButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/button_submit" />
+
+        <TextView
+            android:id="@+id/resultText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+</ScrollView>
