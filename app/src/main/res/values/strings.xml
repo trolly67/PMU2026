@@ -12,6 +12,8 @@
     <string name="label_difficulty_default">Сложность: 1</string>
     <string name="difficulty_format">Сложность: %1$d</string>
     <string name="label_birth_date">Дата рождения</string>
+    <string name="label_birth_date_default">Выберите дату рождения</string>
+    <string name="error_no_birth_date">Выберите дату рождения</string>
     <string name="button_submit">Зарегистрироваться</string>
     <string name="error_empty_name">Введите ФИО</string>
     <string name="error_no_gender">Выберите пол</string>

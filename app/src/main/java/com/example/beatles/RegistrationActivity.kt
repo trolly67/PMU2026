@@ -1,11 +1,14 @@
 package com.example.beatles
 
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import com.example.beatles.databinding.ActivityRegistrationBinding
 import java.time.LocalDate
+import java.time.ZoneId
+import java.util.Calendar
 
 class RegistrationActivity : AppCompatActivity() {
 
@@ -17,14 +20,11 @@ class RegistrationActivity : AppCompatActivity() {
         binding = ActivityRegistrationBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.birthDateCalendar.maxDate = System.currentTimeMillis()
-
         setupCourseSpinner()
         setupDifficultySeekBar()
 
-        binding.birthDateCalendar.setOnDateChangeListener { _, year, month, dayOfMonth ->
-            selectedBirthDate = LocalDate.of(year, month + 1, dayOfMonth)
-            android.util.Log.d("Registration", "Saved date: $selectedBirthDate")
+        binding.birthDateText.setOnClickListener {
+            showDatePicker()
         }
 
         binding.submitButton.setOnClickListener {
@@ -33,6 +33,26 @@ class RegistrationActivity : AppCompatActivity() {
                 is ProfileResult.Error -> binding.resultText.text = result.message
             }
         }
+    }
+
+    private fun showDatePicker() {
+        val today = Calendar.getInstance()
+        val dialog = DatePickerDialog(
+            this,
+            { _, year, month, dayOfMonth ->
+                selectedBirthDate = LocalDate.of(year, month + 1, dayOfMonth)
+                binding.birthDateText.text = selectedBirthDate.toString()
+            },
+            today.get(Calendar.YEAR),
+            today.get(Calendar.MONTH),
+            today.get(Calendar.DAY_OF_MONTH)
+        )
+        dialog.datePicker.maxDate = System.currentTimeMillis()
+        dialog.datePicker.minDate = LocalDate.of(1900, 1, 1)
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+        dialog.show()
     }
 
     private fun setupCourseSpinner() {
@@ -77,8 +97,9 @@ class RegistrationActivity : AppCompatActivity() {
         val course = coursePosition + 1
 
         val difficulty = binding.difficultySeekBar.progress + 1
+
         val birthDate = selectedBirthDate
-            ?: LocalDate.now()
+            ?: return ProfileResult.Error(getString(R.string.error_no_birth_date))
 
         val zodiac = zodiacByDate(birthDate.dayOfMonth, birthDate.monthValue)
 
