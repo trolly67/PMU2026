@@ -2,4 +2,19 @@
     <string name="app_name">Beatles</string>
     <string name="hello_world">Hello World!</string>
     <string name="open_registration">Регистрация игрока</string>
+    <string name="registration_title">Регистрация игрока</string>
+    <string name="label_full_name">ФИО</string>
+    <string name="hint_full_name">Иванов Иван Иванович</string>
+    <string name="label_gender">Пол</string>
+    <string name="gender_male">Мужской</string>
+    <string name="gender_female">Женский</string>
+    <string name="label_course">Курс</string>
+    <string name="label_difficulty_default">Сложность: 1</string>
+    <string name="difficulty_format">Сложность: %1$d</string>
+    <string name="label_birth_date">Дата рождения</string>
+    <string name="button_submit">Зарегистрироваться</string>
+    <string name="error_empty_name">Введите ФИО</string>
+    <string name="error_no_gender">Выберите пол</string>
+    <string name="error_no_course">Выберите курс</string>
+    <string name="result_format">Игрок: %1$s\nПол: %2$s\nКурс: %3$d\nСложность: %4$d\nДата рождения: %5$s\nЗнак зодиака: %6$s</string>
 </resources>
