@@ -115,5 +115,14 @@
             android:layout_marginTop="16dp"
             android:textSize="16sp" />
 
+        <ImageView
+            android:id="@+id/zodiacImage"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+            android:contentDescription="@string/label_zodiac_image"
+            android:visibility="gone" />
+
     </LinearLayout>
 </ScrollView>

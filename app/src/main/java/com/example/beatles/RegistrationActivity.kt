@@ -114,7 +114,20 @@ class RegistrationActivity : AppCompatActivity() {
             )
         )
     }
-
+    private fun zodiacImageRes(zodiac: ZodiacSign): Int = when (zodiac) {
+        ZodiacSign.ARIES -> R.drawable.zodiac_aries
+        ZodiacSign.TAURUS -> R.drawable.zodiac_taurus
+        ZodiacSign.GEMINI -> R.drawable.zodiac_gemini
+        ZodiacSign.CANCER -> R.drawable.zodiac_cancer
+        ZodiacSign.LEO -> R.drawable.zodiac_leo
+        ZodiacSign.VIRGO -> R.drawable.zodiac_virgo
+        ZodiacSign.LIBRA -> R.drawable.zodiac_libra
+        ZodiacSign.SCORPIO -> R.drawable.zodiac_scorpio
+        ZodiacSign.SAGITTARIUS -> R.drawable.zodiac_sagittarius
+        ZodiacSign.CAPRICORN -> R.drawable.zodiac_capricorn
+        ZodiacSign.AQUARIUS -> R.drawable.zodiac_aquarius
+        ZodiacSign.PISCES -> R.drawable.zodiac_pisces
+    }
     private fun showProfile(profile: PlayerProfile) {
         val genderText = when (profile.gender) {
             Gender.MALE -> getString(R.string.gender_male)
@@ -129,5 +142,8 @@ class RegistrationActivity : AppCompatActivity() {
             profile.birthDate.toString(),
             profile.zodiac.name
         )
+
+        binding.zodiacImage.setImageResource(zodiacImageRes(profile.zodiac))
+        binding.zodiacImage.visibility = android.view.View.VISIBLE
     }
 }
