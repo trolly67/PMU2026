@@ -1,13 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="@string/tab_settings"
-        android:textSize="24sp" />
+        android:orientation="vertical">
 
-</FrameLayout>
+        <TextView
+            android:id="@+id/speedLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_speed_default"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp" />
+
+        <SeekBar
+            android:id="@+id/speedSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="4"
+            android:progress="1"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/maxBugsLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_max_bugs_default"
+            android:textSize="16sp" />
+
+        <SeekBar
+            android:id="@+id/maxBugsSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="19"
+            android:progress="4"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/bonusIntervalLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_bonus_interval_default"
+            android:textSize="16sp" />
+
+        <SeekBar
+            android:id="@+id/bonusIntervalSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="26"
+            android:progress="10"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/roundDurationLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_round_duration_default"
+            android:textSize="16sp" />
+
+        <SeekBar
+            android:id="@+id/roundDurationSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="9"
+            android:progress="2"
+            android:layout_marginBottom="16dp" />
+
+    </LinearLayout>
+</ScrollView>

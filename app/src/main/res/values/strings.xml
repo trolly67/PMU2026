@@ -24,5 +24,13 @@
     <string name="tab_authors">Авторы</string>
     <string name="author_photo">Фото автора</string>
     <string name="tab_settings">Настройки</string>
+    <string name="settings_speed_default">Скорость игры: 2</string>
+    <string name="settings_speed_format">Скорость игры: %1$d</string>
+    <string name="settings_max_bugs_default">Макс. тараканов: 5</string>
+    <string name="settings_max_bugs_format">Макс. тараканов: %1$d</string>
+    <string name="settings_bonus_interval_default">Интервал бонусов: 11 сек</string>
+    <string name="settings_bonus_interval_format">Интервал бонусов: %1$d сек</string>
+    <string name="settings_round_duration_default">Длительность раунда: 3 мин</string>
+    <string name="settings_round_duration_format">Длительность раунда: %1$d мин</string>
     <string name="result_format">Игрок: %1$s\nПол: %2$s\nКурс: %3$d\nСложность: %4$d\nДата рождения: %5$s\nЗнак зодиака: %6$s</string>
 </resources>
