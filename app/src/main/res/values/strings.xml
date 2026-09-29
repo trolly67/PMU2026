@@ -19,5 +19,9 @@
     <string name="error_no_gender">Выберите пол</string>
     <string name="error_no_course">Выберите курс</string>
     <string name="label_zodiac_image">Знак зодиака</string>
+    <string name="tab_registration">Регистрация</string>
+    <string name="tab_rules">Правила</string>
+    <string name="tab_authors">Авторы</string>
+    <string name="tab_settings">Настройки</string>
     <string name="result_format">Игрок: %1$s\nПол: %2$s\nКурс: %3$d\nСложность: %4$d\nДата рождения: %5$s\nЗнак зодиака: %6$s</string>
 </resources>
