@@ -1,9 +1,9 @@
 package com.example.beatles
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.example.beatles.databinding.ActivityMainBinding
+import com.google.android.material.tabs.TabLayoutMediator
 
 class MainActivity : AppCompatActivity() {
 
@@ -14,8 +14,16 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.openRegistrationButton.setOnClickListener {
-            startActivity(Intent(this, RegistrationActivity::class.java))
-        }
+        binding.viewPager.adapter = MainPagerAdapter(this)
+
+        TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
+            tab.text = when (position) {
+                0 -> getString(R.string.tab_registration)
+                1 -> getString(R.string.tab_rules)
+                2 -> getString(R.string.tab_authors)
+                3 -> getString(R.string.tab_settings)
+                else -> ""
+            }
+        }.attach()
     }
 }

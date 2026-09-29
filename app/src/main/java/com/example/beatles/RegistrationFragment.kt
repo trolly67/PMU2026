@@ -2,23 +2,35 @@ package com.example.beatles
 
 import android.app.DatePickerDialog
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
-import androidx.appcompat.app.AppCompatActivity
-import com.example.beatles.databinding.ActivityRegistrationBinding
+import androidx.fragment.app.Fragment
+import com.example.beatles.databinding.FragmentRegistrationBinding
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Calendar
 
-class RegistrationActivity : AppCompatActivity() {
+class RegistrationFragment : Fragment() {
 
-    private lateinit var binding: ActivityRegistrationBinding
+    private var _binding: FragmentRegistrationBinding? = null
+    private val binding get() = _binding!!
+
     private var selectedBirthDate: LocalDate? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityRegistrationBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentRegistrationBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         setupCourseSpinner()
         setupDifficultySeekBar()
@@ -35,10 +47,15 @@ class RegistrationActivity : AppCompatActivity() {
         }
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
     private fun showDatePicker() {
         val today = Calendar.getInstance()
         val dialog = DatePickerDialog(
-            this,
+            requireContext(),
             { _, year, month, dayOfMonth ->
                 selectedBirthDate = LocalDate.of(year, month + 1, dayOfMonth)
                 binding.birthDateText.text = selectedBirthDate.toString()
@@ -58,7 +75,7 @@ class RegistrationActivity : AppCompatActivity() {
     private fun setupCourseSpinner() {
         val courses = (1..6).map { it.toString() }
         val adapter = ArrayAdapter(
-            this,
+            requireContext(),
             android.R.layout.simple_spinner_item,
             courses
         )
@@ -114,6 +131,7 @@ class RegistrationActivity : AppCompatActivity() {
             )
         )
     }
+
     private fun zodiacImageRes(zodiac: ZodiacSign): Int = when (zodiac) {
         ZodiacSign.ARIES -> R.drawable.zodiac_aries
         ZodiacSign.TAURUS -> R.drawable.zodiac_taurus
@@ -128,6 +146,7 @@ class RegistrationActivity : AppCompatActivity() {
         ZodiacSign.AQUARIUS -> R.drawable.zodiac_aquarius
         ZodiacSign.PISCES -> R.drawable.zodiac_pisces
     }
+
     private fun showProfile(profile: PlayerProfile) {
         val genderText = when (profile.gender) {
             Gender.MALE -> getString(R.string.gender_male)
@@ -144,6 +163,6 @@ class RegistrationActivity : AppCompatActivity() {
         )
 
         binding.zodiacImage.setImageResource(zodiacImageRes(profile.zodiac))
-        binding.zodiacImage.visibility = android.view.View.VISIBLE
+        binding.zodiacImage.visibility = View.VISIBLE
     }
 }
