@@ -24,6 +24,7 @@
     <string name="tab_authors">Авторы</string>
     <string name="author_photo">Фото автора</string>
     <string name="tab_settings">Настройки</string>
+    <string name="button_play">Играть</string>
     <string name="settings_speed_default">Скорость игры: 2</string>
     <string name="settings_speed_format">Скорость игры: %1$d</string>
     <string name="settings_max_bugs_default">Макс. тараканов: 5</string>

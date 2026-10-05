@@ -39,6 +39,10 @@ class RegistrationFragment : Fragment() {
             showDatePicker()
         }
 
+        binding.playButton.setOnClickListener {
+            startActivity(android.content.Intent(requireContext(), GameActivity::class.java))
+        }
+
         binding.submitButton.setOnClickListener {
             when (val result = readProfileFromForm()) {
                 is ProfileResult.Success -> showProfile(result.profile)
