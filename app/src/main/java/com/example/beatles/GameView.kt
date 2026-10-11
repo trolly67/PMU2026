@@ -1,6 +1,8 @@
 package com.example.beatles
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -19,6 +21,7 @@ class GameView @JvmOverloads constructor(
 
     private val bugs = mutableListOf<Bug>()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val bitmapCache = mutableMapOf<Int, Bitmap>()
 
     init {
         holder.addCallback(this)
@@ -37,7 +40,6 @@ class GameView @JvmOverloads constructor(
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
-        // Останавливаем игровой поток
         isRunning = false
         thread?.join()
         thread = null
@@ -57,7 +59,6 @@ class GameView @JvmOverloads constructor(
         for (bug in bugs) {
             bug.x += bug.vx
             bug.y += bug.vy
-
             if (bug.x < 0 || bug.x + bug.size > w) bug.vx = -bug.vx
             if (bug.y < 0 || bug.y + bug.size > h) bug.vy = -bug.vy
         }
@@ -67,25 +68,26 @@ class GameView @JvmOverloads constructor(
         val canvas: Canvas = holder.lockCanvas() ?: return
         try {
             canvas.drawColor(Color.WHITE)
-
             for (bug in bugs) {
-                val bitmap = android.graphics.BitmapFactory.decodeResource(
-                    resources, bug.imageResId
-                )
-                val scaled = android.graphics.Bitmap.createScaledBitmap(
-                    bitmap, bug.size.toInt(), bug.size.toInt(), false
-                )
-                canvas.drawBitmap(scaled, bug.x, bug.y, paint)
+                val bitmap = getBugBitmap(bug)
+                canvas.drawBitmap(bitmap, bug.x, bug.y, paint)
             }
         } finally {
             holder.unlockCanvasAndPost(canvas)
         }
     }
 
+    private fun getBugBitmap(bug: Bug): Bitmap {
+        return bitmapCache.getOrPut(bug.imageResId) {
+            val original = BitmapFactory.decodeResource(resources, bug.imageResId)
+            Bitmap.createScaledBitmap(original, bug.size.toInt(), bug.size.toInt(), false)
+        }
+    }
+
     private fun spawnBugs(count: Int) {
         val w = width.toFloat()
         val h = height.toFloat()
-        val images = listOf(R.drawable.bug1, R.drawable.bug2)
+        val images = listOf(R.drawable.bug1, R.drawable.bug2, R.drawable.bug3)
 
         repeat(count) {
             bugs.add(
