@@ -46,6 +46,12 @@ class GameActivity : AppCompatActivity() {
             }
             popup.show()
         }
+
+        binding.gameView.applySettings(
+            speed = GameSettings.getSpeed(this),
+            maxBugs = GameSettings.getMaxBugs(this),
+            roundDurationSec = GameSettings.getRoundDuration(this)
+        )
     }
 
     private fun showGameOver(score: Int, hits: Int, misses: Int) {

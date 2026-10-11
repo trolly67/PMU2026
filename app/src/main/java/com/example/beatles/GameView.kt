@@ -37,13 +37,24 @@ class GameView @JvmOverloads constructor(
 
     var onScoreChanged: ((Int) -> Unit)? = null
     var onGameOver: ((score: Int, hits: Int, misses: Int) -> Unit)? = null
-
     var onTimerChanged: ((Int) -> Unit)? = null
+
     private var roundDurationSec: Int = 60
     private var timeLeftMs: Long = roundDurationSec * 1000L
 
+    private var baseSpeed = 0.15f
+    private var maxBugs = 5
+
     init {
         holder.addCallback(this)
+    }
+
+    fun applySettings(speed: Int, maxBugs: Int, roundDurationSec: Int) {
+        this.baseSpeed = 0.05f * speed
+        this.maxBugs = maxBugs
+        this.roundDurationSec = roundDurationSec * 60
+        this.timeLeftMs = this.roundDurationSec * 1000L
+        this.isGameOver = false
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
@@ -56,7 +67,7 @@ class GameView @JvmOverloads constructor(
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
         synchronized(bugs) {
             if (bugs.isEmpty()) {
-                repeat(5) { spawnBug() }
+                repeat(maxBugs) { spawnBug() }
             }
         }
     }
@@ -76,12 +87,15 @@ class GameView @JvmOverloads constructor(
             if (!isGameOver) {
                 timeLeftMs -= (dt * 1000).toLong()
                 if (timeLeftMs <= 0) {
+                    timeLeftMs = 0
                     isGameOver = true
                     post { onGameOver?.invoke(score, hits, misses) }
                 }
             }
+
             val secondsLeft = (timeLeftMs / 1000).toInt()
             post { onTimerChanged?.invoke(secondsLeft) }
+
             update(dt)
             draw()
             Thread.sleep(16)
@@ -148,7 +162,9 @@ class GameView @JvmOverloads constructor(
                 score += hitBug!!.scoreValue
                 hits++
                 onScoreChanged?.invoke(score)
-                synchronized(bugs) { spawnBug() }
+                synchronized(bugs) {
+                    if (bugs.size < maxBugs) spawnBug()
+                }
             } else {
                 score -= 5
                 misses++
@@ -173,7 +189,6 @@ class GameView @JvmOverloads constructor(
             BugType.RARE -> R.drawable.bug3
         }
 
-        val baseSpeed = 0.15f
         val speed = baseSpeed * type.speedMultiplier
         val angle = Random.nextFloat() * 2f * Math.PI
         val vx = (Math.cos(angle).toFloat()) * speed
