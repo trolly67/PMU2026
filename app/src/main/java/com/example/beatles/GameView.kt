@@ -22,8 +22,10 @@ class GameView @JvmOverloads constructor(
     @Volatile private var isGameOver = false
 
     private val bugs = mutableListOf<Bug>()
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val bitmapCache = mutableMapOf<Int, Bitmap>()
+    private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
+
+    private val originalBitmaps = mutableMapOf<Int, Bitmap>()
+    private val scaledBitmaps = mutableMapOf<Pair<Int, Int>, Bitmap>()
 
     private var nextBugId = 1L
     private var lastFrameTime = 0L
@@ -45,6 +47,8 @@ class GameView @JvmOverloads constructor(
     private var baseSpeed = 0.15f
     private var maxBugs = 5
 
+    private var lastPostedSecond = -1
+
     init {
         holder.addCallback(this)
     }
@@ -60,11 +64,11 @@ class GameView @JvmOverloads constructor(
     override fun surfaceCreated(holder: SurfaceHolder) {
         isRunning = true
         lastFrameTime = System.currentTimeMillis()
-        thread = Thread(this)
-        thread?.start()
+        thread = Thread(this).also { it.start() }
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+        scaledBitmaps.clear()
         synchronized(bugs) {
             if (bugs.isEmpty()) {
                 repeat(maxBugs) { spawnBug() }
@@ -80,9 +84,9 @@ class GameView @JvmOverloads constructor(
 
     override fun run() {
         while (isRunning) {
-            val now = System.currentTimeMillis()
-            val dt = (now - lastFrameTime) / 1000f
-            lastFrameTime = now
+            val frameStart = System.currentTimeMillis()
+            val dt = (frameStart - lastFrameTime) / 1000f
+            lastFrameTime = frameStart
 
             if (!isGameOver) {
                 timeLeftMs -= (dt * 1000).toLong()
@@ -94,11 +98,17 @@ class GameView @JvmOverloads constructor(
             }
 
             val secondsLeft = (timeLeftMs / 1000).toInt()
-            post { onTimerChanged?.invoke(secondsLeft) }
+            if (secondsLeft != lastPostedSecond) {
+                lastPostedSecond = secondsLeft
+                post { onTimerChanged?.invoke(secondsLeft) }
+            }
 
             update(dt)
             draw()
-            Thread.sleep(16)
+
+            val frameTime = System.currentTimeMillis() - frameStart
+            val sleepTime = 16 - frameTime
+            if (sleepTime > 0) Thread.sleep(sleepTime)
         }
     }
 
@@ -123,23 +133,30 @@ class GameView @JvmOverloads constructor(
 
             val w = width.toFloat()
             val h = height.toFloat()
+            val minSide = minOf(w, h)
 
             synchronized(bugs) {
                 for (bug in bugs) {
-                    val bitmap = getBugBitmap(bug)
-                    val pixelX = bug.x * w
-                    val pixelY = bug.y * h
-                    val pixelSize = bug.size * minOf(w, h)
-
-                    val scaled = Bitmap.createScaledBitmap(
-                        bitmap, pixelSize.toInt(), pixelSize.toInt(), false
-                    )
-                    canvas.drawBitmap(scaled, pixelX, pixelY, paint)
+                    val pixelSize = (bug.size * minSide).toInt().coerceAtLeast(1)
+                    val bitmap = getScaledBitmap(bug.imageResId, pixelSize)
+                    canvas.drawBitmap(bitmap, bug.x * w, bug.y * h, paint)
                 }
             }
         } finally {
             holder.unlockCanvasAndPost(canvas)
         }
+    }
+
+    private fun getScaledBitmap(resId: Int, size: Int): Bitmap {
+        val key = resId to size
+        scaledBitmaps[key]?.let { return it }
+
+        val original = originalBitmaps.getOrPut(resId) {
+            BitmapFactory.decodeResource(resources, resId)
+        }
+        val scaled = Bitmap.createScaledBitmap(original, size, size, true)
+        scaledBitmaps[key] = scaled
+        return scaled
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -173,12 +190,6 @@ class GameView @JvmOverloads constructor(
             return true
         }
         return super.onTouchEvent(event)
-    }
-
-    private fun getBugBitmap(bug: Bug): Bitmap {
-        return bitmapCache.getOrPut(bug.imageResId) {
-            BitmapFactory.decodeResource(resources, bug.imageResId)
-        }
     }
 
     private fun spawnBug() {
