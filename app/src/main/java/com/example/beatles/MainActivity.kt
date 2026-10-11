@@ -1,5 +1,6 @@
 package com.example.beatles
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.example.beatles.databinding.ActivityMainBinding
@@ -25,5 +26,18 @@ class MainActivity : AppCompatActivity() {
                 else -> ""
             }
         }.attach()
+
+        val tabPosition = intent.getIntExtra("tab_position", 0)
+        if (tabPosition > 0) {
+            binding.viewPager.setCurrentItem(tabPosition, false)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val tabPosition = intent.getIntExtra("tab_position", 0)
+        if (tabPosition > 0) {
+            binding.viewPager.setCurrentItem(tabPosition, false)
+        }
     }
 }
