@@ -19,6 +19,9 @@ class GameView @JvmOverloads constructor(
     private var thread: Thread? = null
     private var isRunning = false
 
+    var score: Int = 0
+        private set
+    var onScoreChanged: ((Int) -> Unit)? = null
     private val bugs = mutableListOf<Bug>()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val bitmapCache = mutableMapOf<Int, Bitmap>()
@@ -101,5 +104,29 @@ class GameView @JvmOverloads constructor(
                 )
             )
         }
+    }
+
+    override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
+        if (event.action == android.view.MotionEvent.ACTION_DOWN) {
+            val touchX = event.x
+            val touchY = event.y
+
+            val hitBug = bugs.findLast { bug ->
+                touchX >= bug.x && touchX <= bug.x + bug.size &&
+                        touchY >= bug.y && touchY <= bug.y + bug.size
+            }
+
+            if (hitBug != null) {
+                bugs.remove(hitBug)
+                score += 10
+                onScoreChanged?.invoke(score)
+                spawnBugs(count = 1)
+            } else {
+                score -= 5
+                onScoreChanged?.invoke(score)
+            }
+            return true
+        }
+        return super.onTouchEvent(event)
     }
 }
