@@ -38,6 +38,7 @@ class GameView @JvmOverloads constructor(
     var onScoreChanged: ((Int) -> Unit)? = null
     var onGameOver: ((score: Int, hits: Int, misses: Int) -> Unit)? = null
 
+    var onTimerChanged: ((Int) -> Unit)? = null
     private var roundDurationSec: Int = 60
     private var timeLeftMs: Long = roundDurationSec * 1000L
 
@@ -79,7 +80,8 @@ class GameView @JvmOverloads constructor(
                     post { onGameOver?.invoke(score, hits, misses) }
                 }
             }
-
+            val secondsLeft = (timeLeftMs / 1000).toInt()
+            post { onTimerChanged?.invoke(secondsLeft) }
             update(dt)
             draw()
             Thread.sleep(16)
