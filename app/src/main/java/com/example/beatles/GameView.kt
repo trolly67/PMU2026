@@ -19,14 +19,27 @@ class GameView @JvmOverloads constructor(
 
     private var thread: Thread? = null
     @Volatile private var isRunning = false
+    @Volatile private var isGameOver = false
 
     private val bugs = mutableListOf<Bug>()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val bitmapCache = mutableMapOf<Int, Bitmap>()
 
+    private var nextBugId = 1L
+    private var lastFrameTime = 0L
+
     var score: Int = 0
         private set
+    var hits: Int = 0
+        private set
+    var misses: Int = 0
+        private set
+
     var onScoreChanged: ((Int) -> Unit)? = null
+    var onGameOver: ((score: Int, hits: Int, misses: Int) -> Unit)? = null
+
+    private var roundDurationSec: Int = 60
+    private var timeLeftMs: Long = roundDurationSec * 1000L
 
     init {
         holder.addCallback(this)
@@ -34,6 +47,7 @@ class GameView @JvmOverloads constructor(
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         isRunning = true
+        lastFrameTime = System.currentTimeMillis()
         thread = Thread(this)
         thread?.start()
     }
@@ -41,7 +55,7 @@ class GameView @JvmOverloads constructor(
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
         synchronized(bugs) {
             if (bugs.isEmpty()) {
-                spawnBugs(count = 5)
+                repeat(5) { spawnBug() }
             }
         }
     }
@@ -54,21 +68,34 @@ class GameView @JvmOverloads constructor(
 
     override fun run() {
         while (isRunning) {
-            update()
+            val now = System.currentTimeMillis()
+            val dt = (now - lastFrameTime) / 1000f
+            lastFrameTime = now
+
+            if (!isGameOver) {
+                timeLeftMs -= (dt * 1000).toLong()
+                if (timeLeftMs <= 0) {
+                    isGameOver = true
+                    post { onGameOver?.invoke(score, hits, misses) }
+                }
+            }
+
+            update(dt)
             draw()
             Thread.sleep(16)
         }
     }
 
-    private fun update() {
-        val w = width.toFloat()
-        val h = height.toFloat()
+    private fun update(dt: Float) {
         synchronized(bugs) {
             for (bug in bugs) {
-                bug.x += bug.vx
-                bug.y += bug.vy
-                if (bug.x < 0 || bug.x + bug.size > w) bug.vx = -bug.vx
-                if (bug.y < 0 || bug.y + bug.size > h) bug.vy = -bug.vy
+                bug.x += bug.vx * dt
+                bug.y += bug.vy * dt
+
+                if (bug.x < 0f) { bug.x = 0f; bug.vx = -bug.vx }
+                if (bug.x + bug.size > 1f) { bug.x = 1f - bug.size; bug.vx = -bug.vx }
+                if (bug.y < 0f) { bug.y = 0f; bug.vy = -bug.vy }
+                if (bug.y + bug.size > 1f) { bug.y = 1f - bug.size; bug.vy = -bug.vy }
             }
         }
     }
@@ -77,10 +104,21 @@ class GameView @JvmOverloads constructor(
         val canvas: Canvas = holder.lockCanvas() ?: return
         try {
             canvas.drawColor(Color.WHITE)
+
+            val w = width.toFloat()
+            val h = height.toFloat()
+
             synchronized(bugs) {
                 for (bug in bugs) {
                     val bitmap = getBugBitmap(bug)
-                    canvas.drawBitmap(bitmap, bug.x, bug.y, paint)
+                    val pixelX = bug.x * w
+                    val pixelY = bug.y * h
+                    val pixelSize = bug.size * minOf(w, h)
+
+                    val scaled = Bitmap.createScaledBitmap(
+                        bitmap, pixelSize.toInt(), pixelSize.toInt(), false
+                    )
+                    canvas.drawBitmap(scaled, pixelX, pixelY, paint)
                 }
             }
         } finally {
@@ -89,30 +127,29 @@ class GameView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.action == MotionEvent.ACTION_DOWN) {
-            val touchX = event.x
-            val touchY = event.y
+        if (event.action == MotionEvent.ACTION_DOWN && !isGameOver) {
+            val w = width.toFloat()
+            val h = height.toFloat()
+            val logicalX = event.x / w
+            val logicalY = event.y / h
 
-            var hit = false
+            var hitBug: Bug? = null
             synchronized(bugs) {
-                val hitBug = bugs.findLast { bug ->
-                    touchX >= bug.x && touchX <= bug.x + bug.size &&
-                            touchY >= bug.y && touchY <= bug.y + bug.size
+                hitBug = bugs.findLast { bug ->
+                    logicalX >= bug.x && logicalX <= bug.x + bug.size &&
+                            logicalY >= bug.y && logicalY <= bug.y + bug.size
                 }
-                if (hitBug != null) {
-                    bugs.remove(hitBug)
-                    hit = true
-                }
+                if (hitBug != null) bugs.remove(hitBug)
             }
 
-            if (hit) {
-                score += 10
+            if (hitBug != null) {
+                score += hitBug!!.scoreValue
+                hits++
                 onScoreChanged?.invoke(score)
-                synchronized(bugs) {
-                    spawnBugs(count = 1)
-                }
+                synchronized(bugs) { spawnBug() }
             } else {
                 score -= 5
+                misses++
                 onScoreChanged?.invoke(score)
             }
             return true
@@ -122,27 +159,45 @@ class GameView @JvmOverloads constructor(
 
     private fun getBugBitmap(bug: Bug): Bitmap {
         return bitmapCache.getOrPut(bug.imageResId) {
-            val original = BitmapFactory.decodeResource(resources, bug.imageResId)
-            Bitmap.createScaledBitmap(original, bug.size.toInt(), bug.size.toInt(), false)
+            BitmapFactory.decodeResource(resources, bug.imageResId)
         }
     }
 
-    private fun spawnBugs(count: Int) {
-        val w = width.toFloat()
-        val h = height.toFloat()
-        val images = listOf(R.drawable.bug1, R.drawable.bug2)
-
-        repeat(count) {
-            bugs.add(
-                Bug(
-                    x = Random.nextFloat() * (w - 100f),
-                    y = Random.nextFloat() * (h - 100f),
-                    vx = (Random.nextFloat() - 0.5f) * 10f,
-                    vy = (Random.nextFloat() - 0.5f) * 10f,
-                    size = 100f,
-                    imageResId = images.random()
-                )
-            )
+    private fun spawnBug() {
+        val type = pickBugType()
+        val imageRes = when (type) {
+            BugType.NORMAL -> R.drawable.bug1
+            BugType.FAST -> R.drawable.bug2
+            BugType.RARE -> R.drawable.bug3
         }
+
+        val baseSpeed = 0.15f
+        val speed = baseSpeed * type.speedMultiplier
+        val angle = Random.nextFloat() * 2f * Math.PI
+        val vx = (Math.cos(angle).toFloat()) * speed
+        val vy = (Math.sin(angle).toFloat()) * speed
+
+        bugs.add(
+            Bug(
+                id = nextBugId++,
+                type = type,
+                x = Random.nextFloat() * 0.9f,
+                y = Random.nextFloat() * 0.9f,
+                vx = vx,
+                vy = vy,
+                baseSize = 0.08f,
+                imageResId = imageRes
+            )
+        )
+    }
+
+    private fun pickBugType(): BugType {
+        val totalWeight = BugType.values().sumOf { it.spawnWeight }
+        var r = Random.nextInt(totalWeight)
+        for (type in BugType.values()) {
+            r -= type.spawnWeight
+            if (r < 0) return type
+        }
+        return BugType.NORMAL
     }
 }
