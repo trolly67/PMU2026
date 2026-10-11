@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import kotlin.random.Random
@@ -17,14 +18,15 @@ class GameView @JvmOverloads constructor(
 ) : SurfaceView(context, attrs), SurfaceHolder.Callback, Runnable {
 
     private var thread: Thread? = null
-    private var isRunning = false
+    @Volatile private var isRunning = false
+
+    private val bugs = mutableListOf<Bug>()
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val bitmapCache = mutableMapOf<Int, Bitmap>()
 
     var score: Int = 0
         private set
     var onScoreChanged: ((Int) -> Unit)? = null
-    private val bugs = mutableListOf<Bug>()
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val bitmapCache = mutableMapOf<Int, Bitmap>()
 
     init {
         holder.addCallback(this)
@@ -37,8 +39,10 @@ class GameView @JvmOverloads constructor(
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-        if (bugs.isEmpty()) {
-            spawnBugs(count = 5)
+        synchronized(bugs) {
+            if (bugs.isEmpty()) {
+                spawnBugs(count = 5)
+            }
         }
     }
 
@@ -59,11 +63,13 @@ class GameView @JvmOverloads constructor(
     private fun update() {
         val w = width.toFloat()
         val h = height.toFloat()
-        for (bug in bugs) {
-            bug.x += bug.vx
-            bug.y += bug.vy
-            if (bug.x < 0 || bug.x + bug.size > w) bug.vx = -bug.vx
-            if (bug.y < 0 || bug.y + bug.size > h) bug.vy = -bug.vy
+        synchronized(bugs) {
+            for (bug in bugs) {
+                bug.x += bug.vx
+                bug.y += bug.vy
+                if (bug.x < 0 || bug.x + bug.size > w) bug.vx = -bug.vx
+                if (bug.y < 0 || bug.y + bug.size > h) bug.vy = -bug.vy
+            }
         }
     }
 
@@ -71,13 +77,47 @@ class GameView @JvmOverloads constructor(
         val canvas: Canvas = holder.lockCanvas() ?: return
         try {
             canvas.drawColor(Color.WHITE)
-            for (bug in bugs) {
-                val bitmap = getBugBitmap(bug)
-                canvas.drawBitmap(bitmap, bug.x, bug.y, paint)
+            synchronized(bugs) {
+                for (bug in bugs) {
+                    val bitmap = getBugBitmap(bug)
+                    canvas.drawBitmap(bitmap, bug.x, bug.y, paint)
+                }
             }
         } finally {
             holder.unlockCanvasAndPost(canvas)
         }
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_DOWN) {
+            val touchX = event.x
+            val touchY = event.y
+
+            var hit = false
+            synchronized(bugs) {
+                val hitBug = bugs.findLast { bug ->
+                    touchX >= bug.x && touchX <= bug.x + bug.size &&
+                            touchY >= bug.y && touchY <= bug.y + bug.size
+                }
+                if (hitBug != null) {
+                    bugs.remove(hitBug)
+                    hit = true
+                }
+            }
+
+            if (hit) {
+                score += 10
+                onScoreChanged?.invoke(score)
+                synchronized(bugs) {
+                    spawnBugs(count = 1)
+                }
+            } else {
+                score -= 5
+                onScoreChanged?.invoke(score)
+            }
+            return true
+        }
+        return super.onTouchEvent(event)
     }
 
     private fun getBugBitmap(bug: Bug): Bitmap {
@@ -90,7 +130,7 @@ class GameView @JvmOverloads constructor(
     private fun spawnBugs(count: Int) {
         val w = width.toFloat()
         val h = height.toFloat()
-        val images = listOf(R.drawable.bug1, R.drawable.bug2, R.drawable.bug3)
+        val images = listOf(R.drawable.bug1, R.drawable.bug2)
 
         repeat(count) {
             bugs.add(
@@ -104,29 +144,5 @@ class GameView @JvmOverloads constructor(
                 )
             )
         }
-    }
-
-    override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
-        if (event.action == android.view.MotionEvent.ACTION_DOWN) {
-            val touchX = event.x
-            val touchY = event.y
-
-            val hitBug = bugs.findLast { bug ->
-                touchX >= bug.x && touchX <= bug.x + bug.size &&
-                        touchY >= bug.y && touchY <= bug.y + bug.size
-            }
-
-            if (hitBug != null) {
-                bugs.remove(hitBug)
-                score += 10
-                onScoreChanged?.invoke(score)
-                spawnBugs(count = 1)
-            } else {
-                score -= 5
-                onScoreChanged?.invoke(score)
-            }
-            return true
-        }
-        return super.onTouchEvent(event)
     }
 }
