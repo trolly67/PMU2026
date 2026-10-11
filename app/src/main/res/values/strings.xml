@@ -33,5 +33,8 @@
     <string name="settings_bonus_interval_format">Интервал бонусов: %1$d сек</string>
     <string name="settings_round_duration_default">Длительность раунда: 3 мин</string>
     <string name="settings_round_duration_format">Длительность раунда: %1$d мин</string>
+    <string name="score_default">Очки: 0</string>
+    <string name="score_format">Очки: %1$d</string>
+    <string name="button_menu">Меню</string>
     <string name="result_format">Игрок: %1$s\nПол: %2$s\nКурс: %3$d\nСложность: %4$d\nДата рождения: %5$s\nЗнак зодиака: %6$s</string>
 </resources>

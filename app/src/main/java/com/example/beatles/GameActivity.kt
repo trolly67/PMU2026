@@ -12,5 +12,9 @@ class GameActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        binding.gameView.onScoreChanged = { score ->
+            binding.scoreText.text = getString(R.string.score_format, score)
+        }
     }
 }
