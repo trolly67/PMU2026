@@ -12,6 +12,12 @@ import com.example.beatles.databinding.FragmentRegistrationBinding
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Calendar
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.example.beatles.data.AppDatabase
+import com.example.beatles.data.PlayerEntity
 
 class RegistrationFragment : Fragment() {
 
@@ -45,9 +51,39 @@ class RegistrationFragment : Fragment() {
 
         binding.submitButton.setOnClickListener {
             when (val result = readProfileFromForm()) {
-                is ProfileResult.Success -> showProfile(result.profile)
+                is ProfileResult.Success -> {
+                    showProfile(result.profile)
+
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val db = AppDatabase.get(requireContext())
+                        val player = PlayerEntity(
+                            name = result.profile.fullName,
+                            gender = result.profile.gender.name,
+                            course = result.profile.course,
+                            difficulty = result.profile.difficulty,
+                            birthDateEpochDay = result.profile.birthDate.toEpochDay(),
+                            zodiac = result.profile.zodiac.name
+                        )
+                        val insertedId = db.playerDao().insert(player)
+
+                        val finalId = if (insertedId > 0) insertedId
+                        else db.playerDao().findByName(player.name)?.id ?: -1L
+
+                        GameSettings.setDifficulty(requireContext(), result.profile.difficulty)
+
+                        withContext(Dispatchers.Main) {
+                            binding.playButton.isEnabled = true
+                            binding.playButton.setOnClickListener {
+                                val intent = Intent(requireContext(), GameActivity::class.java)
+                                intent.putExtra("player_id", finalId)
+                                startActivity(intent)
+                            }
+                        }
+                    }
+                }
                 is ProfileResult.Error -> binding.resultText.text = result.message
             }
+
         }
     }
 
