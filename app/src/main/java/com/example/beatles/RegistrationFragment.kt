@@ -12,12 +12,6 @@ import com.example.beatles.databinding.FragmentRegistrationBinding
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Calendar
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import com.example.beatles.data.AppDatabase
-import com.example.beatles.data.PlayerEntity
 
 class RegistrationFragment : Fragment() {
 
