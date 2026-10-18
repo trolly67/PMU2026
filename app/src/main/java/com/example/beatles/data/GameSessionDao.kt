@@ -14,7 +14,7 @@ interface GameSessionDao {
         "SELECT gs.id AS sessionId, p.name AS playerName, gs.score, gs.difficulty, " +
                 "gs.hits, gs.misses, gs.finishedAtEpochMillis " +
                 "FROM game_sessions gs JOIN players p ON gs.playerId = p.id " +
-                "ORDER BY gs.difficulty DESC, gs.score DESC, gs.finishedAtEpochMillis DESC"
+                "ORDER BY gs.score DESC, gs.difficulty DESC, gs.finishedAtEpochMillis DESC"
     )
     fun observeAllRecords(): Flow<List<RecordRow>>
 

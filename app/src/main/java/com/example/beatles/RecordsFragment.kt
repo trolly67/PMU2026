@@ -12,6 +12,7 @@ import com.example.beatles.data.AppDatabase
 import com.example.beatles.databinding.FragmentRecordsBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 class RecordsFragment : Fragment() {
 
@@ -48,7 +49,10 @@ class RecordsFragment : Fragment() {
         }
     }
 
+    private var loadJob: Job? = null
+
     private fun loadRecords(filterPosition: Int) {
+        loadJob?.cancel()
         val dao = AppDatabase.get(requireContext()).gameSessionDao()
         val flow = if (filterPosition == 0) {
             dao.observeAllRecords()
@@ -56,7 +60,7 @@ class RecordsFragment : Fragment() {
             dao.observeRecordsByDifficulty(filterPosition - 1)
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
+        loadJob = viewLifecycleOwner.lifecycleScope.launch {
             flow.collectLatest { records ->
                 adapter.submitList(records)
             }

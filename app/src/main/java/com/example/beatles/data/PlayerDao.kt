@@ -11,7 +11,7 @@ interface PlayerDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(player: PlayerEntity): Long
 
-    @Query("SELECT * FROM players WHERE name = :name LIMIT 1")
+    @Query("SELECT * FROM players WHERE name = :name COLLATE NOCASE LIMIT 1")
     suspend fun findByName(name: String): PlayerEntity?
 
     @Query("SELECT * FROM players ORDER BY name ASC")
