@@ -10,11 +10,19 @@ object GameSettings {
     private const val KEY_MAX_BUGS = "max_bugs"
     private const val KEY_BONUS_INTERVAL = "bonus_interval"
     private const val KEY_ROUND_DURATION = "round_duration"
+    private const val KEY_DIFFICULTY = "difficulty"
 
+    const val DEFAULT_DIFFICULTY = 2
     const val DEFAULT_SPEED = 2
     const val DEFAULT_MAX_BUGS = 5
     const val DEFAULT_BONUS_INTERVAL = 11
     const val DEFAULT_ROUND_DURATION = 3
+
+    fun getDifficulty(context: Context): Int =
+        getInt(context, KEY_DIFFICULTY, DEFAULT_DIFFICULTY)
+
+    fun setDifficulty(context: Context, value: Int) =
+        setInt(context, KEY_DIFFICULTY, value)
 
     fun getSpeed(context: Context): Int =
         getInt(context, KEY_SPEED, DEFAULT_SPEED)
