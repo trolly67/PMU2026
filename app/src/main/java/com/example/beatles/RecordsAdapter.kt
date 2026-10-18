@@ -26,7 +26,9 @@ class RecordsAdapter : RecyclerView.Adapter<RecordsAdapter.ViewHolder>() {
         val record = records[position]
         holder.name.text = record.playerName
         holder.score.text = "Очки: ${record.score}"
-        holder.difficulty.text = "Сложность: ${record.difficulty} | Точность: ${record.accuracy}%"
+
+        val diffText = DifficultyPreset.fromIndex(record.difficulty).label
+        holder.difficulty.text = "Режим: $diffText | Точность: ${record.accuracy}%"
     }
 
     override fun getItemCount(): Int = records.size

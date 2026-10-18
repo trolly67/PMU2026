@@ -33,28 +33,27 @@ class RecordsFragment : Fragment() {
         binding.recordsRecycler.layoutManager = LinearLayoutManager(requireContext())
         binding.recordsRecycler.adapter = adapter
 
-        // Настраиваем фильтр
-        val filterOptions = listOf(getString(R.string.filter_all), "1", "2", "3", "4", "5")
+        val filterOptions = mutableListOf(getString(R.string.filter_all))
+        DifficultyPreset.values().forEach { filterOptions.add(it.label) }
+
         val spinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, filterOptions)
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.filterSpinner.adapter = spinnerAdapter
 
-        // Следим за выбором фильтра
         binding.filterSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val difficulty = if (position == 0) null else position
-                loadRecords(difficulty)
+                loadRecords(position)
             }
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
         }
     }
 
-    private fun loadRecords(difficulty: Int?) {
+    private fun loadRecords(filterPosition: Int) {
         val dao = AppDatabase.get(requireContext()).gameSessionDao()
-        val flow = if (difficulty == null) {
+        val flow = if (filterPosition == 0) {
             dao.observeAllRecords()
         } else {
-            dao.observeRecordsByDifficulty(difficulty)
+            dao.observeRecordsByDifficulty(filterPosition - 1)
         }
 
         viewLifecycleOwner.lifecycleScope.launch {

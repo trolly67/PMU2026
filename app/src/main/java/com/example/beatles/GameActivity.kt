@@ -4,12 +4,13 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.PopupMenu
 import androidx.appcompat.app.AppCompatActivity
-import com.example.beatles.databinding.ActivityGameBinding
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import com.example.beatles.data.AppDatabase
 import com.example.beatles.data.GameSessionEntity
+import com.example.beatles.databinding.ActivityGameBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
 class GameActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityGameBinding
@@ -57,18 +58,18 @@ class GameActivity : AppCompatActivity() {
             popup.show()
         }
 
-
         binding.gameView.applySettings(
             speed = GameSettings.getSpeed(this),
             maxBugs = GameSettings.getMaxBugs(this),
             roundDurationSec = GameSettings.getRoundDuration(this)
         )
     }
+
     private fun saveGameSession(score: Int, hits: Int, misses: Int) {
         if (playerId <= 0L) return
 
         val durationSec = ((System.currentTimeMillis() - roundStartMs) / 1000).toInt()
-        val difficulty = GameSettings.getDifficulty(this)
+        val playedDifficulty = GameSettings.getPresetIndex(this)
 
         lifecycleScope.launch(Dispatchers.IO) {
             AppDatabase.get(this@GameActivity).gameSessionDao().insert(
@@ -78,7 +79,7 @@ class GameActivity : AppCompatActivity() {
                     hits = hits,
                     misses = misses,
                     durationSeconds = durationSec,
-                    difficulty = difficulty,
+                    difficulty = playedDifficulty,
                     finishedAtEpochMillis = System.currentTimeMillis()
                 )
             )
