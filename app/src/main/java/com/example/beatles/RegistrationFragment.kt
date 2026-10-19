@@ -1,14 +1,20 @@
 package com.example.beatles
 
 import android.app.DatePickerDialog
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.SeekBar
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.example.beatles.data.AppDatabase
+import com.example.beatles.data.PlayerEntity
 import com.example.beatles.databinding.FragmentRegistrationBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Calendar
@@ -31,24 +37,109 @@ class RegistrationFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val ctx = requireContext()
 
         setupCourseSpinner()
-        setupDifficultySeekBar()
 
         binding.birthDateText.setOnClickListener {
             showDatePicker()
         }
 
-        binding.playButton.setOnClickListener {
-            startActivity(android.content.Intent(requireContext(), GameActivity::class.java))
+        val currentId = GameSettings.getCurrentPlayerId(ctx)
+        if (currentId > 0) {
+            loadPlayerProfile(currentId)
+        } else {
+            setupLoggedOutUI()
         }
 
         binding.submitButton.setOnClickListener {
             when (val result = readProfileFromForm()) {
-                is ProfileResult.Success -> showProfile(result.profile)
+                is ProfileResult.Success -> {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val db = AppDatabase.get(requireContext())
+                        val player = PlayerEntity(
+                            name = result.profile.fullName,
+                            gender = result.profile.gender.name,
+                            course = result.profile.course,
+                            difficulty = result.profile.difficulty,
+                            birthDateEpochDay = result.profile.birthDate.toEpochDay(),
+                            zodiac = result.profile.zodiac.name
+                        )
+                        val insertedId = db.playerDao().insert(player)
+                        val finalId = if (insertedId > 0) insertedId
+                        else db.playerDao().findByName(player.name)?.id ?: -1L
+
+                        GameSettings.setCurrentPlayerId(requireContext(), finalId)
+
+                        withContext(Dispatchers.Main) {
+                            loadPlayerProfile(finalId)
+                        }
+                    }
+                }
                 is ProfileResult.Error -> binding.resultText.text = result.message
             }
         }
+    }
+
+    private fun loadPlayerProfile(playerId: Long) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val player = AppDatabase.get(requireContext()).playerDao().getById(playerId)
+            withContext(Dispatchers.Main) {
+                if (player != null) {
+                    val profile = PlayerProfile(
+                        fullName = player.name,
+                        gender = Gender.valueOf(player.gender),
+                        course = player.course,
+                        difficulty = player.difficulty,
+                        birthDate = LocalDate.ofEpochDay(player.birthDateEpochDay),
+                        zodiac = ZodiacSign.valueOf(player.zodiac)
+                    )
+                    showProfile(profile)
+                    setupLoggedInUI(playerId)
+                } else {
+                    GameSettings.setCurrentPlayerId(requireContext(), -1L)
+                    setupLoggedOutUI()
+                }
+            }
+        }
+    }
+
+    private fun setupLoggedInUI(playerId: Long) {
+        binding.formContainer.visibility = View.GONE
+        binding.profileContainer.visibility = View.VISIBLE
+
+        // Меняем заголовок
+        binding.titleText.text = getString(R.string.profile_title)
+
+        binding.playButton.isEnabled = true
+        binding.playButton.text = getString(R.string.button_play)
+        binding.logoutButton.visibility = View.VISIBLE
+
+        binding.playButton.setOnClickListener {
+            val intent = Intent(requireContext(), GameActivity::class.java)
+            intent.putExtra("player_id", playerId)
+            startActivity(intent)
+        }
+
+        binding.logoutButton.setOnClickListener {
+            GameSettings.setCurrentPlayerId(requireContext(), -1L)
+            requireActivity().recreate()
+        }
+    }
+
+    private fun setupLoggedOutUI() {
+        binding.formContainer.visibility = View.VISIBLE
+        binding.profileContainer.visibility = View.GONE
+
+        // Возвращаем заголовок регистрации
+        binding.titleText.text = getString(R.string.registration_title)
+
+        binding.playButton.isEnabled = false
+        binding.playButton.text = getString(R.string.button_play_disabled)
+        binding.logoutButton.visibility = View.GONE
+
+        binding.resultText.text = ""
+        binding.zodiacImage.visibility = View.GONE
     }
 
     override fun onDestroyView() {
@@ -87,21 +178,6 @@ class RegistrationFragment : Fragment() {
         binding.courseSpinner.adapter = adapter
     }
 
-    private fun setupDifficultySeekBar() {
-        binding.difficultySeekBar.setOnSeekBarChangeListener(
-            object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(
-                    seekBar: SeekBar?, progress: Int, fromUser: Boolean
-                ) {
-                    binding.difficultyLabel.text =
-                        getString(R.string.difficulty_format, progress + 1)
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            }
-        )
-    }
-
     private fun readProfileFromForm(): ProfileResult {
         val rawName = binding.fullNameInput.text.toString()
         val name = rawName.normalizedName()
@@ -117,7 +193,7 @@ class RegistrationFragment : Fragment() {
         if (coursePosition < 0) return ProfileResult.Error(getString(R.string.error_no_course))
         val course = coursePosition + 1
 
-        val difficulty = binding.difficultySeekBar.progress + 1
+        val difficulty = GameSettings.getPresetIndex(requireContext())
 
         val birthDate = selectedBirthDate
             ?: return ProfileResult.Error(getString(R.string.error_no_birth_date))

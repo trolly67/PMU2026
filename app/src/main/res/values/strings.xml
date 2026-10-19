@@ -45,5 +45,14 @@
     <string name="final_misses_format">Промахи: %1$d</string>
     <string name="final_accuracy_format">Точность: %1$d%%</string>
     <string name="button_restart">Играть снова</string>
+    <string name="tab_records">Рекорды</string>
+    <string name="label_filter">Фильтр по сложности</string>
+    <string name="filter_all">Все</string>
+    <string name="record_format">%1$s — %2$d очков (Сложность: %3$d)</string>
+    <string name="label_difficulty">Сложность игры</string>
+    <string name="button_logout">Выйти</string>
+    <string name="button_play_disabled">Сначала зарегистрируйтесь</string>
+    <string name="settings_preset_label">Режим сложности</string>
+    <string name="profile_title">Мой профиль</string>
     <string name="result_format">Игрок: %1$s\nПол: %2$s\nКурс: %3$d\nСложность: %4$d\nДата рождения: %5$s\nЗнак зодиака: %6$s</string>
 </resources>

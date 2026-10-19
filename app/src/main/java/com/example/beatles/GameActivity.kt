@@ -4,16 +4,26 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.PopupMenu
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.example.beatles.data.AppDatabase
+import com.example.beatles.data.GameSessionEntity
 import com.example.beatles.databinding.ActivityGameBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class GameActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityGameBinding
+    private var playerId: Long = -1L
+    private var roundStartMs: Long = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        playerId = intent.getLongExtra("player_id", -1L)
+        roundStartMs = System.currentTimeMillis()
 
         binding.gameView.onScoreChanged = { score ->
             binding.scoreText.text = getString(R.string.score_format, score)
@@ -24,6 +34,7 @@ class GameActivity : AppCompatActivity() {
         }
 
         binding.gameView.onGameOver = { score, hits, misses ->
+            saveGameSession(score, hits, misses)
             showGameOver(score, hits, misses)
         }
 
@@ -52,6 +63,27 @@ class GameActivity : AppCompatActivity() {
             maxBugs = GameSettings.getMaxBugs(this),
             roundDurationSec = GameSettings.getRoundDuration(this)
         )
+    }
+
+    private fun saveGameSession(score: Int, hits: Int, misses: Int) {
+        if (playerId <= 0L) return
+
+        val durationSec = ((System.currentTimeMillis() - roundStartMs) / 1000).toInt()
+        val playedDifficulty = GameSettings.getPresetIndex(this)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            AppDatabase.get(this@GameActivity).gameSessionDao().insert(
+                GameSessionEntity(
+                    playerId = playerId,
+                    score = score,
+                    hits = hits,
+                    misses = misses,
+                    durationSeconds = durationSec,
+                    difficulty = playedDifficulty,
+                    finishedAtEpochMillis = System.currentTimeMillis()
+                )
+            )
+        }
     }
 
     private fun showGameOver(score: Int, hits: Int, misses: Int) {
