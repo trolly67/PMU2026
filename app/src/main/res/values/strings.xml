@@ -48,5 +48,5 @@
     <string name="button_play_disabled">Сначала зарегистрируйтесь</string>
     <string name="settings_preset_label">Режим сложности</string>
     <string name="profile_title">Мой профиль</string>
-    <string name="result_format">Игрок: %1$s\nПол: %2$s\nКурс: %3$d\nСложность: %4$d\nДата рождения: %5$s\nЗнак зодиака: %6$s</string>
+    <string name="result_format">Игрок: %1$s\nПол: %2$s\nКурс: %3$d\nДата рождения: %4$s\nЗнак зодиака: %5$s</string>
 </resources>

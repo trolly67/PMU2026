@@ -80,39 +80,26 @@ class SettingsFragment : Fragment() {
         setupSeekBar(binding.speedSeekBar, binding.speedLabel, R.string.settings_speed_format) { p ->
             if (!isUpdatingUi && binding.speedSeekBar.isEnabled) {
                 GameSettings.setSpeed(ctx, p + 1)
-                checkCustom()
             }
             p + 1
         }
         setupSeekBar(binding.maxBugsSeekBar, binding.maxBugsLabel, R.string.settings_max_bugs_format) { p ->
             if (!isUpdatingUi && binding.maxBugsSeekBar.isEnabled) {
                 GameSettings.setMaxBugs(ctx, p + 1)
-                checkCustom()
             }
             p + 1
         }
         setupSeekBar(binding.roundDurationSeekBar, binding.roundDurationLabel, R.string.settings_round_duration_format) { p ->
             if (!isUpdatingUi && binding.roundDurationSeekBar.isEnabled) {
                 GameSettings.setRoundDuration(ctx, p + 1)
-                checkCustom()
             }
             p + 1
         }
         setupSeekBar(binding.bonusIntervalSeekBar, binding.bonusIntervalLabel, R.string.settings_bonus_interval_format) { p ->
             if (!isUpdatingUi && binding.bonusIntervalSeekBar.isEnabled) {
                 GameSettings.setBonusInterval(ctx, p + 1)
-                checkCustom()
             }
             p + 1
-        }
-    }
-
-    private fun checkCustom() {
-        if (GameSettings.getPresetIndex(requireContext()) != 5) {
-            GameSettings.setCustomFlag(requireContext())
-            isUpdatingUi = true
-            binding.settingsPresetSpinner.setSelection(5)
-            isUpdatingUi = false
         }
     }
 

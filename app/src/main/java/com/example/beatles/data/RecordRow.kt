@@ -1,13 +1,11 @@
 package com.example.beatles.data
 
 data class RecordRow(
-    val sessionId: Long,
     val playerName: String,
     val score: Int,
     val difficulty: Int,
     val hits: Int,
-    val misses: Int,
-    val finishedAtEpochMillis: Long
+    val misses: Int
 ) {
     val accuracy: Int
         get() {

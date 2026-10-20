@@ -41,10 +41,6 @@ object GameSettings {
         }
     }
 
-    fun setCustomFlag(context: Context) {
-        setInt(context, KEY_PRESET_INDEX, 5)
-    }
-
     fun getSpeed(context: Context): Int = getInt(context, KEY_SPEED, DEFAULT_SPEED)
     fun setSpeed(context: Context, value: Int) = setInt(context, KEY_SPEED, value)
 

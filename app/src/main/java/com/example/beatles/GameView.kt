@@ -27,7 +27,6 @@ class GameView @JvmOverloads constructor(
     private val originalBitmaps = mutableMapOf<Int, Bitmap>()
     private val scaledBitmaps = mutableMapOf<Pair<Int, Int>, Bitmap>()
 
-    private var nextBugId = 1L
     private var lastFrameTime = 0L
 
     var score: Int = 0
@@ -207,7 +206,6 @@ class GameView @JvmOverloads constructor(
 
         bugs.add(
             Bug(
-                id = nextBugId++,
                 type = type,
                 x = Random.nextFloat() * 0.9f,
                 y = Random.nextFloat() * 0.9f,

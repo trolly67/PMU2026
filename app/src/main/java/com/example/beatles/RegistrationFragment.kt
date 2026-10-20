@@ -237,7 +237,6 @@ class RegistrationFragment : Fragment() {
             profile.fullName,
             genderText,
             profile.course,
-            profile.difficulty,
             profile.birthDate.toString(),
             profile.zodiac.name
         )

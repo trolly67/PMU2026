@@ -12,7 +12,6 @@ enum class BugType(
 }
 
 data class Bug(
-    val id: Long,
     val type: BugType,
     var x: Float,
     var y: Float,
