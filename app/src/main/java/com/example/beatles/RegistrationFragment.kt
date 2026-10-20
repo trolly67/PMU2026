@@ -108,7 +108,6 @@ class RegistrationFragment : Fragment() {
         binding.formContainer.visibility = View.GONE
         binding.profileContainer.visibility = View.VISIBLE
 
-        // Меняем заголовок
         binding.titleText.text = getString(R.string.profile_title)
 
         binding.playButton.isEnabled = true
@@ -131,7 +130,6 @@ class RegistrationFragment : Fragment() {
         binding.formContainer.visibility = View.VISIBLE
         binding.profileContainer.visibility = View.GONE
 
-        // Возвращаем заголовок регистрации
         binding.titleText.text = getString(R.string.registration_title)
 
         binding.playButton.isEnabled = false

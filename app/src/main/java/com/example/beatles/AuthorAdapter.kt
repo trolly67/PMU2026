@@ -1,6 +1,8 @@
 package com.example.beatles
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,9 +24,30 @@ class AuthorAdapter(
         val photo = view.findViewById<ImageView>(R.id.authorPhoto)
         val name = view.findViewById<TextView>(R.id.authorName)
 
-        photo.setImageResource(author.photoResId)
+        photo.setImageBitmap(getScaledPhoto(author.photoResId))
         name.text = author.name
 
         return view
+    }
+
+    private fun getScaledPhoto(resId: Int): Bitmap? {
+        photoCache[resId]?.let { return it }
+
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeResource(context.resources, resId, bounds)
+
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, PHOTO_MAX_PX)
+        }
+        val bitmap = BitmapFactory.decodeResource(context.resources, resId, options)
+        if (bitmap != null) {
+            photoCache[resId] = bitmap
+        }
+        return bitmap
+    }
+
+    private companion object {
+        private const val PHOTO_MAX_PX = 160
+        private val photoCache = mutableMapOf<Int, Bitmap>()
     }
 }

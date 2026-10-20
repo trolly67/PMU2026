@@ -22,12 +22,14 @@ class GameView @JvmOverloads constructor(
     @Volatile private var isGameOver = false
 
     private val bugs = mutableListOf<Bug>()
-    private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
 
-    private val originalBitmaps = mutableMapOf<Int, Bitmap>()
-    private val scaledBitmaps = mutableMapOf<Pair<Int, Int>, Bitmap>()
+    private val drawSnapshot = ArrayList<Bug>()
 
-    private var lastFrameTime = 0L
+    private val paint = Paint()
+
+    private val scaledBitmaps = mutableMapOf<Long, Bitmap>()
+
+    private var lastFrameTimeNs = 0L
 
     var score: Int = 0
         private set
@@ -62,7 +64,7 @@ class GameView @JvmOverloads constructor(
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         isRunning = true
-        lastFrameTime = System.currentTimeMillis()
+        lastFrameTimeNs = System.nanoTime()
         thread = Thread(this).also { it.start() }
     }
 
@@ -83,9 +85,10 @@ class GameView @JvmOverloads constructor(
 
     override fun run() {
         while (isRunning) {
-            val frameStart = System.currentTimeMillis()
-            val dt = (frameStart - lastFrameTime) / 1000f
-            lastFrameTime = frameStart
+            val frameStartNs = System.nanoTime()
+            var dt = (frameStartNs - lastFrameTimeNs) / 1_000_000_000f
+            lastFrameTimeNs = frameStartNs
+            if (dt > MAX_FRAME_DT) dt = MAX_FRAME_DT
 
             if (!isGameOver) {
                 timeLeftMs -= (dt * 1000).toLong()
@@ -105,9 +108,15 @@ class GameView @JvmOverloads constructor(
             update(dt)
             draw()
 
-            val frameTime = System.currentTimeMillis() - frameStart
-            val sleepTime = 16 - frameTime
-            if (sleepTime > 0) Thread.sleep(sleepTime)
+            val elapsedMs = (System.nanoTime() - frameStartNs) / 1_000_000L
+            val sleepMs = FRAME_INTERVAL_MS - elapsedMs
+            if (sleepMs > 0) {
+                try {
+                    Thread.sleep(sleepMs)
+                } catch (_: InterruptedException) {
+                    break
+                }
+            }
         }
     }
 
@@ -130,16 +139,19 @@ class GameView @JvmOverloads constructor(
         try {
             canvas.drawColor(Color.WHITE)
 
+            synchronized(bugs) {
+                drawSnapshot.clear()
+                drawSnapshot.addAll(bugs)
+            }
+
             val w = width.toFloat()
             val h = height.toFloat()
             val minSide = minOf(w, h)
 
-            synchronized(bugs) {
-                for (bug in bugs) {
-                    val pixelSize = (bug.size * minSide).toInt().coerceAtLeast(1)
-                    val bitmap = getScaledBitmap(bug.imageResId, pixelSize)
-                    canvas.drawBitmap(bitmap, bug.x * w, bug.y * h, paint)
-                }
+            for (bug in drawSnapshot) {
+                val pixelSize = (bug.size * minSide).toInt().coerceAtLeast(1)
+                val bitmap = getScaledBitmap(bug.imageResId, pixelSize)
+                canvas.drawBitmap(bitmap, bug.x * w, bug.y * h, paint)
             }
         } finally {
             holder.unlockCanvasAndPost(canvas)
@@ -147,13 +159,22 @@ class GameView @JvmOverloads constructor(
     }
 
     private fun getScaledBitmap(resId: Int, size: Int): Bitmap {
-        val key = resId to size
+        val key = (resId.toLong() shl 32) or (size.toLong() and 0xFFFFFFFFL)
         scaledBitmaps[key]?.let { return it }
 
-        val original = originalBitmaps.getOrPut(resId) {
-            BitmapFactory.decodeResource(resources, resId)
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeResource(resources, resId, bounds)
+
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, size)
         }
-        val scaled = Bitmap.createScaledBitmap(original, size, size, true)
+        val decoded = BitmapFactory.decodeResource(resources, resId, options)
+
+        val scaled = when {
+            decoded == null -> Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+            decoded.width == size && decoded.height == size -> decoded
+            else -> Bitmap.createScaledBitmap(decoded, size, size, true).also { decoded.recycle() }
+        }
         scaledBitmaps[key] = scaled
         return scaled
     }
@@ -225,5 +246,10 @@ class GameView @JvmOverloads constructor(
             if (r < 0) return type
         }
         return BugType.NORMAL
+    }
+
+    private companion object {
+        private const val FRAME_INTERVAL_MS = 16L
+        private const val MAX_FRAME_DT = 0.05f
     }
 }
