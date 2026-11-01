@@ -16,7 +16,7 @@ object GameSettings {
     const val DEFAULT_PRESET_INDEX = 1
     const val DEFAULT_SPEED = 2
     const val DEFAULT_MAX_BUGS = 5
-    const val DEFAULT_BONUS_INTERVAL = 11
+    const val DEFAULT_BONUS_INTERVAL = 15
     const val DEFAULT_ROUND_DURATION = 3
 
     fun getCurrentPlayerId(context: Context): Long =

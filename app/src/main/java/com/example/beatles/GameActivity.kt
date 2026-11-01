@@ -61,7 +61,8 @@ class GameActivity : AppCompatActivity() {
         binding.gameView.applySettings(
             speed = GameSettings.getSpeed(this),
             maxBugs = GameSettings.getMaxBugs(this),
-            roundDurationSec = GameSettings.getRoundDuration(this)
+            roundDurationSec = GameSettings.getRoundDuration(this),
+            bonusIntervalSec = GameSettings.getBonusInterval(this)
         )
     }
 

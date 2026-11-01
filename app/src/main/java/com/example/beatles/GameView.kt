@@ -87,11 +87,12 @@ class GameView @JvmOverloads constructor(
         screamSoundId = soundPool.load(context, R.raw.bugs_scream, 1)
     }
 
-    fun applySettings(speed: Int, maxBugs: Int, roundDurationSec: Int) {
+    fun applySettings(speed: Int, maxBugs: Int, roundDurationSec: Int, bonusIntervalSec: Int) {
         this.baseSpeed = 0.05f * speed
         this.maxBugs = maxBugs
         this.roundDurationSec = roundDurationSec * 60
         this.timeLeftMs = this.roundDurationSec * 1000L
+        this.bonusIntervalMs = bonusIntervalSec * 1000L
         this.bonusTimerMs = 0L
         this.bonusElapsedMs = 0L
         this.bonus = null
@@ -191,7 +192,7 @@ class GameView @JvmOverloads constructor(
 
         synchronized(bugs) {
             for (bug in bugs) {
-                bug.x += bug.vx * dt
+                bug.x -= bug.vx * dt
                 bug.y += bug.vy * dt
 
                 if (tiltModeActive) {
