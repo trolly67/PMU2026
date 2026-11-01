@@ -10,6 +10,8 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.media.AudioAttributes
+import android.media.SoundPool
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.SurfaceHolder
@@ -44,6 +46,18 @@ class GameView @JvmOverloads constructor(
     private val accelerometer: Sensor? =
         sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
+    private val soundPool: SoundPool = SoundPool.Builder()
+        .setMaxStreams(1)
+        .setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+        )
+        .build()
+    @Volatile private var screamSoundId = 0
+    @Volatile private var screamStreamId = 0
+
     private val paint = Paint()
     private val scaledBitmaps = mutableMapOf<Long, Bitmap>()
 
@@ -70,6 +84,7 @@ class GameView @JvmOverloads constructor(
 
     init {
         holder.addCallback(this)
+        screamSoundId = soundPool.load(context, R.raw.bugs_scream, 1)
     }
 
     fun applySettings(speed: Int, maxBugs: Int, roundDurationSec: Int) {
@@ -106,8 +121,15 @@ class GameView @JvmOverloads constructor(
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         isRunning = false
         sensorManager.unregisterListener(this)
+        stopScream()
         thread?.join()
         thread = null
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        stopScream()
+        soundPool.release()
     }
 
     override fun onSensorChanged(event: SensorEvent) {
@@ -307,9 +329,24 @@ class GameView @JvmOverloads constructor(
     private fun onBonusActivated() {
         tiltModeActive = true
         tiltModeRemainingMs = TILT_DURATION_MS
+        playScream()
     }
 
     private fun onTiltModeEnded() {
+        stopScream()
+    }
+
+    private fun playScream() {
+        if (screamSoundId == 0) return
+        stopScream()
+        screamStreamId = soundPool.play(screamSoundId, 1f, 1f, 1, -1, 1f)
+    }
+
+    private fun stopScream() {
+        if (screamStreamId != 0) {
+            soundPool.stop(screamStreamId)
+            screamStreamId = 0
+        }
     }
 
     private fun spawnBug() {
@@ -363,7 +400,7 @@ class GameView @JvmOverloads constructor(
         private const val BONUS_LIFETIME_MS = 5_000L
         private const val BONUS_SIZE = 0.12f
         private const val BONUS_SCORE = 100
-        private val BONUS_IMAGE_RES = R.drawable.bonus
+        private val BONUS_IMAGE_RES = android.R.drawable.star_big_on
 
         private const val TILT_DURATION_MS = 10_000L
         private const val TILT_ACCEL = 1.5f
