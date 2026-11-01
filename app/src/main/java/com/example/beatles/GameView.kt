@@ -6,27 +6,45 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import kotlin.math.hypot
 import kotlin.random.Random
 
 class GameView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
-) : SurfaceView(context, attrs), SurfaceHolder.Callback, Runnable {
+) : SurfaceView(context, attrs), SurfaceHolder.Callback, Runnable, SensorEventListener {
 
     private var thread: Thread? = null
     @Volatile private var isRunning = false
     @Volatile private var isGameOver = false
 
     private val bugs = mutableListOf<Bug>()
-
     private val drawSnapshot = ArrayList<Bug>()
 
-    private val paint = Paint()
+    @Volatile private var bonus: Bonus? = null
+    @Volatile private var bonusTimerMs = 0L
+    @Volatile private var bonusElapsedMs = 0L
+    @Volatile private var bonusIntervalMs = 15_000L
 
+    @Volatile private var tiltModeActive = false
+    @Volatile private var tiltModeRemainingMs = 0L
+    @Volatile private var tiltX = 0f
+    @Volatile private var tiltY = 0f
+
+    private val sensorManager =
+        context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    private val accelerometer: Sensor? =
+        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+
+    private val paint = Paint()
     private val scaledBitmaps = mutableMapOf<Long, Bitmap>()
 
     private var lastFrameTimeNs = 0L
@@ -59,12 +77,20 @@ class GameView @JvmOverloads constructor(
         this.maxBugs = maxBugs
         this.roundDurationSec = roundDurationSec * 60
         this.timeLeftMs = this.roundDurationSec * 1000L
+        this.bonusTimerMs = 0L
+        this.bonusElapsedMs = 0L
+        this.bonus = null
+        this.tiltModeActive = false
+        this.tiltModeRemainingMs = 0L
         this.isGameOver = false
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         isRunning = true
         lastFrameTimeNs = System.nanoTime()
+        accelerometer?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
+        }
         thread = Thread(this).also { it.start() }
     }
 
@@ -79,8 +105,19 @@ class GameView @JvmOverloads constructor(
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         isRunning = false
+        sensorManager.unregisterListener(this)
         thread?.join()
         thread = null
+    }
+
+    override fun onSensorChanged(event: SensorEvent) {
+        if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+            tiltX = event.values[0] / SensorManager.GRAVITY_EARTH
+            tiltY = event.values[1] / SensorManager.GRAVITY_EARTH
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
     }
 
     override fun run() {
@@ -121,15 +158,51 @@ class GameView @JvmOverloads constructor(
     }
 
     private fun update(dt: Float) {
+        if (tiltModeActive) {
+            tiltModeRemainingMs -= (dt * 1000).toLong()
+            if (tiltModeRemainingMs <= 0L) {
+                tiltModeActive = false
+                tiltModeRemainingMs = 0L
+                onTiltModeEnded()
+            }
+        }
+
         synchronized(bugs) {
             for (bug in bugs) {
                 bug.x += bug.vx * dt
                 bug.y += bug.vy * dt
 
+                if (tiltModeActive) {
+                    bug.vx += tiltX * TILT_ACCEL * dt
+                    bug.vy += tiltY * TILT_ACCEL * dt
+                    val maxSpeed = baseSpeed * bug.type.speedMultiplier * TILT_MAX_MULT
+                    val speed = hypot(bug.vx, bug.vy)
+                    if (speed > maxSpeed) {
+                        bug.vx = bug.vx / speed * maxSpeed
+                        bug.vy = bug.vy / speed * maxSpeed
+                    }
+                }
+
                 if (bug.x < 0f) { bug.x = 0f; bug.vx = -bug.vx }
                 if (bug.x + bug.size > 1f) { bug.x = 1f - bug.size; bug.vx = -bug.vx }
                 if (bug.y < 0f) { bug.y = 0f; bug.vy = -bug.vy }
                 if (bug.y + bug.size > 1f) { bug.y = 1f - bug.size; bug.vy = -bug.vy }
+            }
+        }
+
+        if (!isGameOver) {
+            if (bonus == null) {
+                bonusTimerMs += (dt * 1000).toLong()
+                if (bonusTimerMs >= bonusIntervalMs) {
+                    bonusTimerMs = 0L
+                    spawnBonus()
+                }
+            } else {
+                bonusElapsedMs += (dt * 1000).toLong()
+                if (bonusElapsedMs >= BONUS_LIFETIME_MS) {
+                    bonus = null
+                    bonusElapsedMs = 0L
+                }
             }
         }
     }
@@ -152,6 +225,12 @@ class GameView @JvmOverloads constructor(
                 val pixelSize = (bug.size * minSide).toInt().coerceAtLeast(1)
                 val bitmap = getScaledBitmap(bug.imageResId, pixelSize)
                 canvas.drawBitmap(bitmap, bug.x * w, bug.y * h, paint)
+            }
+
+            bonus?.let { b ->
+                val pixelSize = (b.size * minSide).toInt().coerceAtLeast(1)
+                val bitmap = getScaledBitmap(b.imageResId, pixelSize)
+                canvas.drawBitmap(bitmap, b.x * w, b.y * h, paint)
             }
         } finally {
             holder.unlockCanvasAndPost(canvas)
@@ -186,6 +265,19 @@ class GameView @JvmOverloads constructor(
             val logicalX = event.x / w
             val logicalY = event.y / h
 
+            val b = bonus
+            if (b != null &&
+                logicalX >= b.x && logicalX <= b.x + b.size &&
+                logicalY >= b.y && logicalY <= b.y + b.size
+            ) {
+                bonus = null
+                bonusElapsedMs = 0L
+                score += BONUS_SCORE
+                onScoreChanged?.invoke(score)
+                onBonusActivated()
+                return true
+            }
+
             var hitBug: Bug? = null
             synchronized(bugs) {
                 hitBug = bugs.findLast { bug ->
@@ -210,6 +302,14 @@ class GameView @JvmOverloads constructor(
             return true
         }
         return super.onTouchEvent(event)
+    }
+
+    private fun onBonusActivated() {
+        tiltModeActive = true
+        tiltModeRemainingMs = TILT_DURATION_MS
+    }
+
+    private fun onTiltModeEnded() {
     }
 
     private fun spawnBug() {
@@ -238,6 +338,15 @@ class GameView @JvmOverloads constructor(
         )
     }
 
+    private fun spawnBonus() {
+        bonus = Bonus(
+            x = Random.nextFloat() * 0.85f,
+            y = Random.nextFloat() * 0.85f,
+            size = BONUS_SIZE,
+            imageResId = BONUS_IMAGE_RES
+        )
+    }
+
     private fun pickBugType(): BugType {
         val totalWeight = BugType.values().sumOf { it.spawnWeight }
         var r = Random.nextInt(totalWeight)
@@ -251,5 +360,13 @@ class GameView @JvmOverloads constructor(
     private companion object {
         private const val FRAME_INTERVAL_MS = 16L
         private const val MAX_FRAME_DT = 0.05f
+        private const val BONUS_LIFETIME_MS = 5_000L
+        private const val BONUS_SIZE = 0.12f
+        private const val BONUS_SCORE = 100
+        private val BONUS_IMAGE_RES = R.drawable.bonus
+
+        private const val TILT_DURATION_MS = 10_000L
+        private const val TILT_ACCEL = 1.5f
+        private const val TILT_MAX_MULT = 3f
     }
 }
