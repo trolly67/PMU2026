@@ -192,11 +192,11 @@ class GameView @JvmOverloads constructor(
 
         synchronized(bugs) {
             for (bug in bugs) {
-                bug.x -= bug.vx * dt
+                bug.x += bug.vx * dt
                 bug.y += bug.vy * dt
 
                 if (tiltModeActive) {
-                    bug.vx += tiltX * TILT_ACCEL * dt
+                    bug.vx -= tiltX * TILT_ACCEL * dt
                     bug.vy += tiltY * TILT_ACCEL * dt
                     val maxSpeed = baseSpeed * bug.type.speedMultiplier * TILT_MAX_MULT
                     val speed = hypot(bug.vx, bug.vy)
@@ -401,8 +401,7 @@ class GameView @JvmOverloads constructor(
         private const val BONUS_LIFETIME_MS = 5_000L
         private const val BONUS_SIZE = 0.12f
         private const val BONUS_SCORE = 100
-        private val BONUS_IMAGE_RES = android.R.drawable.star_big_on
-
+        private val BONUS_IMAGE_RES = R.drawable.bonus
         private const val TILT_DURATION_MS = 10_000L
         private const val TILT_ACCEL = 1.5f
         private const val TILT_MAX_MULT = 3f
