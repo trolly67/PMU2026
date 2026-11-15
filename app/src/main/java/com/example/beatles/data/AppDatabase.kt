@@ -6,13 +6,15 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [PlayerEntity::class, GameSessionEntity::class],
-    version = 1,
+    entities = [PlayerEntity::class, GameSessionEntity::class, GoldRateEntity::class],
+    version = 2,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun playerDao(): PlayerDao
     abstract fun gameSessionDao(): GameSessionDao
+
+    abstract fun goldRateDao(): GoldRateDao
 
     companion object {
         @Volatile
