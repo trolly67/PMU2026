@@ -18,7 +18,8 @@ data class Bug(
     var vx: Float,
     var vy: Float,
     val baseSize: Float,
-    val imageResId: Int
+    val imageResId: Int,
+    val isGolden: Boolean = false
 ) {
     val size: Float get() = baseSize * type.sizeMultiplier
     val scoreValue: Int get() = type.scoreValue

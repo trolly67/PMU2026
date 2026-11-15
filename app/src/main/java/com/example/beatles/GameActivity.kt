@@ -8,6 +8,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.beatles.data.AppDatabase
 import com.example.beatles.data.GameSessionEntity
 import com.example.beatles.databinding.ActivityGameBinding
+import com.example.beatles.repository.GoldRateRepositoryProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -64,6 +65,14 @@ class GameActivity : AppCompatActivity() {
             roundDurationSec = GameSettings.getRoundDuration(this),
             bonusIntervalSec = GameSettings.getBonusInterval(this)
         )
+
+        lifecycleScope.launch {
+            GoldRateRepositoryProvider.get(this@GameActivity)
+                .observeRate()
+                .collect { rate ->
+                    binding.gameView.setGoldPriceProvider { rate?.priceRubPerGram }
+                }
+        }
     }
 
     private fun saveGameSession(score: Int, hits: Int, misses: Int) {

@@ -16,6 +16,8 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import com.example.beatles.domain.goldScore
+import java.math.BigDecimal
 import kotlin.math.hypot
 import kotlin.random.Random
 
@@ -40,6 +42,8 @@ class GameView @JvmOverloads constructor(
     @Volatile private var tiltModeRemainingMs = 0L
     @Volatile private var tiltX = 0f
     @Volatile private var tiltY = 0f
+    @Volatile private var goldPriceProvider: (() -> BigDecimal?)? = null
+    @Volatile private var goldenBugTimerMs = 0L
 
     private val sensorManager =
         context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -87,6 +91,10 @@ class GameView @JvmOverloads constructor(
         screamSoundId = soundPool.load(context, R.raw.bugs_scream, 1)
     }
 
+    fun setGoldPriceProvider(provider: () -> BigDecimal?) {
+        goldPriceProvider = provider
+    }
+
     fun applySettings(speed: Int, maxBugs: Int, roundDurationSec: Int, bonusIntervalSec: Int) {
         this.baseSpeed = 0.05f * speed
         this.maxBugs = maxBugs
@@ -99,6 +107,10 @@ class GameView @JvmOverloads constructor(
         this.tiltModeActive = false
         this.tiltModeRemainingMs = 0L
         this.isGameOver = false
+        this.goldenBugTimerMs = 0L
+        synchronized(bugs) {
+            bugs.removeAll { it.isGolden }
+        }
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
@@ -227,6 +239,15 @@ class GameView @JvmOverloads constructor(
                     bonusElapsedMs = 0L
                 }
             }
+
+            val hasGolden = synchronized(bugs) { bugs.any { it.isGolden } }
+            if (!hasGolden) {
+                goldenBugTimerMs += (dt * 1000).toLong()
+                if (goldenBugTimerMs >= GOLDEN_BUG_INTERVAL_MS) {
+                    goldenBugTimerMs = 0L
+                    spawnGoldenBug()
+                }
+            }
         }
     }
 
@@ -311,7 +332,14 @@ class GameView @JvmOverloads constructor(
             }
 
             if (hitBug != null) {
-                score += hitBug!!.scoreValue
+                val hit = hitBug!!
+                if (hit.isGolden) {
+                    val price = goldPriceProvider?.invoke()
+                    score += goldScore(price)
+                    goldenBugTimerMs = 0L
+                } else {
+                    score += hit.scoreValue
+                }
                 hits++
                 onScoreChanged?.invoke(score)
                 synchronized(bugs) {
@@ -376,6 +404,25 @@ class GameView @JvmOverloads constructor(
         )
     }
 
+    private fun spawnGoldenBug() {
+        val speed = baseSpeed * 1.2f
+        val angle = Random.nextFloat() * 2f * Math.PI.toFloat()
+        synchronized(bugs) {
+            bugs.add(
+                Bug(
+                    type = BugType.NORMAL,
+                    x = Random.nextFloat() * 0.85f,
+                    y = Random.nextFloat() * 0.85f,
+                    vx = Math.cos(angle.toDouble()).toFloat() * speed,
+                    vy = Math.sin(angle.toDouble()).toFloat() * speed,
+                    baseSize = GOLDEN_BUG_SIZE,
+                    imageResId = GOLDEN_BUG_IMAGE_RES,
+                    isGolden = true
+                )
+            )
+        }
+    }
+
     private fun spawnBonus() {
         bonus = Bonus(
             x = Random.nextFloat() * 0.85f,
@@ -405,5 +452,9 @@ class GameView @JvmOverloads constructor(
         private const val TILT_DURATION_MS = 10_000L
         private const val TILT_ACCEL = 1.5f
         private const val TILT_MAX_MULT = 3f
+
+        private const val GOLDEN_BUG_INTERVAL_MS = 20_000L
+        private const val GOLDEN_BUG_SIZE = 0.10f
+        private val GOLDEN_BUG_IMAGE_RES = R.drawable.golden_bug
     }
 }
