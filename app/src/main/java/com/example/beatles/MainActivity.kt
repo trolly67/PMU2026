@@ -35,16 +35,6 @@ class MainActivity : AppCompatActivity() {
         if (tabPosition > 0) {
             binding.viewPager.setCurrentItem(tabPosition, false)
         }
-        // Временная загрузка данных при старте
-        lifecycleScope.launch {
-            val repo = GoldRateRepositoryProvider.get(this@MainActivity)
-            val result = repo.refresh() // Загружаем прямо сейчас
-
-            android.util.Log.d("GOLD_CHECK", "Результат загрузки: $result")
-
-            // Принудительно обновляем виджет
-            GoldRateWidgetUpdater.updateAll(this@MainActivity)
-        }
     }
 
     override fun onNewIntent(intent: Intent) {

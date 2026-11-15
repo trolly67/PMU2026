@@ -9,7 +9,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 object CbrXmlParser {
-    private val FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    private val FMT = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
     fun parseGoldRate(input: InputStream, fetchedAt: Long): GoldRate? {
         val parser = XmlPullParserFactory.newInstance().newPullParser()
@@ -40,7 +40,7 @@ object CbrXmlParser {
                     if (tagName.equals("Record", ignoreCase = true)) {
                         if (currentCode == "1" && !currentBuy.isNullOrBlank() && !currentDateStr.isNullOrBlank()) {
                             try {
-                                val date = LocalDate.parse(currentDateStr, FMT)
+                                val date = LocalDate.parse(currentDateStr, FMT) // Парсим "13.11.2026"
                                 val price = currentBuy.replace(',', '.').toBigDecimalOrNull()
 
                                 if (date != null && price != null) {

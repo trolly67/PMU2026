@@ -7,6 +7,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.ImageProvider
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
@@ -22,7 +24,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import androidx.glance.action.clickable
+import com.example.beatles.R
 import com.example.beatles.domain.GoldRate
 import com.example.beatles.repository.GoldRateRepositoryProvider
 import java.time.format.DateTimeFormatter
@@ -49,19 +51,18 @@ class GoldRateWidget : GlanceAppWidget() {
 fun GoldRateWidgetContent(rate: GoldRate?) {
     Box(
         modifier = GlanceModifier
-            .size(160.dp)
-            // Просто желтый фон, без темной темы
-            .background(ColorProvider(Color(0xFFFFD54F)))
-            .padding(12.dp)
+            .size(130.dp)
+            .background(ImageProvider(R.drawable.bg_widget_circle))
+            .padding(8.dp)
             .clickable(actionRunCallback<GoldRefreshAction>()),
         contentAlignment = Alignment.Center
     ) {
         if (rate == null) {
             Text(
-                text = "Нет данных\nНажмите для обновления",
+                text = "Нет данных",
                 style = TextStyle(
-                    color = ColorProvider(Color(0xFF000000)), // Черный текст
-                    fontSize = 12.sp,
+                    color = ColorProvider(Color(0xFF000000)),
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
             )
