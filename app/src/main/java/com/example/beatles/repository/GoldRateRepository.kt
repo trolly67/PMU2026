@@ -3,14 +3,16 @@ package com.example.beatles.repository
 import com.example.beatles.data.GoldRateDao
 import com.example.beatles.data.remote.CbrClient
 import com.example.beatles.data.remote.CbrMetalsApi
-import com.example.beatles.data.remote.toLatestGoldRate
+import com.example.beatles.data.remote.CbrXmlParser
 import com.example.beatles.data.toDomain
 import com.example.beatles.data.toEntity
 import com.example.beatles.domain.GoldRate
 import com.example.beatles.domain.GoldRateError
 import com.example.beatles.domain.GoldRateResult
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
 import java.time.LocalDate
@@ -21,31 +23,36 @@ class GoldRateRepository(
     private val clock: () -> Long = System::currentTimeMillis
 ) {
     fun observeRate(): Flow<GoldRate?> = dao.observe().map { it?.toDomain() }
-
     suspend fun getLastKnown(): GoldRate? = dao.get()?.toDomain()
 
-    suspend fun refresh(): GoldRateResult {
+    suspend fun refresh(): GoldRateResult = withContext(Dispatchers.IO) {
         val now = clock()
         val today = LocalDate.now()
         val from = today.minusDays(30)
 
-        val response = try {
-            api.getMetals(CbrClient.format(from), CbrClient.format(today))
+        try {
+            val responseBody = api.getMetals(CbrClient.format(from), CbrClient.format(today))
+
+            val rate = responseBody.byteStream().use { stream ->
+                CbrXmlParser.parseGoldRate(stream, now)
+            }
+
+            if (rate == null) {
+                return@withContext GoldRateResult.Error(GoldRateError.RateNotFound)
+            }
+
+            dao.upsert(rate.toEntity())
+            return@withContext GoldRateResult.Success(rate)
+
         } catch (e: IOException) {
-            return GoldRateResult.Error(GoldRateError.Offline)
+            return@withContext GoldRateResult.Error(GoldRateError.Offline)
         } catch (e: HttpException) {
-            return GoldRateResult.Error(
+            return@withContext GoldRateResult.Error(
                 if (e.code() in 500..599) GoldRateError.ServiceUnavailable
                 else GoldRateError.InvalidData
             )
         } catch (e: Exception) {
-            return GoldRateResult.Error(GoldRateError.InvalidData)
+            return@withContext GoldRateResult.Error(GoldRateError.InvalidData)
         }
-
-        val rate = response.toLatestGoldRate(now)
-            ?: return GoldRateResult.Error(GoldRateError.RateNotFound)
-
-        dao.upsert(rate.toEntity())
-        return GoldRateResult.Success(rate)
     }
 }

@@ -23,7 +23,6 @@ object CbrClient {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(client)
-            .addConverterFactory(SimpleXmlConverterFactory())
             .build()
             .create(CbrMetalsApi::class.java)
     }
