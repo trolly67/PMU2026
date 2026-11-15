@@ -8,7 +8,6 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -31,11 +30,18 @@ import java.time.format.DateTimeFormatter
 private val DATE_FMT = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
 class GoldRateWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Single
+    override val sizeMode = androidx.glance.appwidget.SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val rate = GoldRateRepositoryProvider.get(context).getLastKnown()
-        provideContent { GoldRateWidgetContent(rate) }
+        val rate = try {
+            GoldRateRepositoryProvider.get(context).getLastKnown()
+        } catch (e: Exception) {
+            null
+        }
+
+        provideContent {
+            GoldRateWidgetContent(rate)
+        }
     }
 }
 
@@ -44,6 +50,7 @@ fun GoldRateWidgetContent(rate: GoldRate?) {
     Box(
         modifier = GlanceModifier
             .size(160.dp)
+            // Просто желтый фон, без темной темы
             .background(ColorProvider(Color(0xFFFFD54F)))
             .padding(12.dp)
             .clickable(actionRunCallback<GoldRefreshAction>()),
@@ -51,10 +58,11 @@ fun GoldRateWidgetContent(rate: GoldRate?) {
     ) {
         if (rate == null) {
             Text(
-                text = "Нет данных",
+                text = "Нет данных\nНажмите для обновления",
                 style = TextStyle(
-                    color = ColorProvider(Color(0xFF5D4037)),
-                    fontSize = 14.sp
+                    color = ColorProvider(Color(0xFF000000)), // Черный текст
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
                 )
             )
         } else {
@@ -62,7 +70,7 @@ fun GoldRateWidgetContent(rate: GoldRate?) {
                 Text(
                     text = "${rate.priceRubPerGram.toBigInteger()} ₽/г",
                     style = TextStyle(
-                        color = ColorProvider(Color(0xFF3E2723)),
+                        color = ColorProvider(Color(0xFF000000)),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )

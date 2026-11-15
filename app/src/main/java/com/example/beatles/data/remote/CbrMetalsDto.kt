@@ -7,11 +7,11 @@ import org.simpleframework.xml.Root
 
 @Root(name = "metals", strict = false)
 data class CbrMetalsResponse(
-    @field:ElementList(entry = "record", inline = true, required = false)
+    @field:ElementList(entry = "Record", inline = true, required = false)
     var records: List<CbrMetalRecord> = emptyList()
 )
 
-@Root(name = "record", strict = false)
+@Root(name = "Record", strict = false)
 data class CbrMetalRecord(
     @field:Attribute(name = "Date", required = false) var date: String? = null,
     @field:Attribute(name = "Code", required = false) var code: String? = null,
