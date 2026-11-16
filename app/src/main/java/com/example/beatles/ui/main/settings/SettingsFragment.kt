@@ -1,0 +1,125 @@
+package com.example.beatles.ui.main.settings
+
+import android.R
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.SeekBar
+import android.widget.TextView
+import androidx.fragment.app.Fragment
+import com.example.beatles.domain.DifficultyPreset
+import com.example.beatles.data.repository.GameSettingsRepository
+import com.example.beatles.databinding.FragmentSettingsBinding
+
+class SettingsFragment : Fragment() {
+
+    private var _binding: FragmentSettingsBinding? = null
+    private val binding get() = _binding!!
+
+    private var isUpdatingUi = false
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentSettingsBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val ctx = requireContext()
+
+        val presetLabels = DifficultyPreset.values().map { it.label }
+        val spinnerAdapter =
+            ArrayAdapter(requireContext(), R.layout.simple_spinner_item, presetLabels)
+        spinnerAdapter.setDropDownViewResource(R.layout.simple_spinner_dropdown_item)
+        binding.settingsPresetSpinner.adapter = spinnerAdapter
+
+        binding.settingsPresetSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (isUpdatingUi) return
+
+                if (GameSettingsRepository.getPresetIndex(ctx) != position) {
+                    GameSettingsRepository.setPresetIndex(ctx, position)
+                }
+
+                isUpdatingUi = true
+                updateSeekBarsFromSettings()
+                toggleSeekBarsEnabled(position == 5)
+                isUpdatingUi = false
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        setupSeekBars()
+
+        isUpdatingUi = true
+        binding.settingsPresetSpinner.setSelection(GameSettingsRepository.getPresetIndex(ctx))
+        updateSeekBarsFromSettings()
+        toggleSeekBarsEnabled(GameSettingsRepository.getPresetIndex(ctx) == 5)
+        isUpdatingUi = false
+    }
+
+    private fun updateSeekBarsFromSettings() {
+        val ctx = requireContext()
+        binding.speedSeekBar.progress = GameSettingsRepository.getSpeed(ctx) - 1
+        binding.maxBugsSeekBar.progress = GameSettingsRepository.getMaxBugs(ctx) - 1
+        binding.bonusIntervalSeekBar.progress = GameSettingsRepository.getBonusInterval(ctx) - 1
+        binding.roundDurationSeekBar.progress = GameSettingsRepository.getRoundDuration(ctx) - 1
+    }
+
+    private fun toggleSeekBarsEnabled(enabled: Boolean) {
+        binding.speedSeekBar.isEnabled = enabled
+        binding.maxBugsSeekBar.isEnabled = enabled
+        binding.roundDurationSeekBar.isEnabled = enabled
+        binding.bonusIntervalSeekBar.isEnabled = enabled
+    }
+
+    private fun setupSeekBars() {
+        val ctx = requireContext()
+
+        setupSeekBar(binding.speedSeekBar, binding.speedLabel, com.example.beatles.R.string.settings_speed_format) { p ->
+            if (!isUpdatingUi && binding.speedSeekBar.isEnabled) {
+                GameSettingsRepository.setSpeed(ctx, p + 1)
+            }
+            p + 1
+        }
+        setupSeekBar(binding.maxBugsSeekBar, binding.maxBugsLabel, com.example.beatles.R.string.settings_max_bugs_format) { p ->
+            if (!isUpdatingUi && binding.maxBugsSeekBar.isEnabled) {
+                GameSettingsRepository.setMaxBugs(ctx, p + 1)
+            }
+            p + 1
+        }
+        setupSeekBar(binding.roundDurationSeekBar, binding.roundDurationLabel, com.example.beatles.R.string.settings_round_duration_format) { p ->
+            if (!isUpdatingUi && binding.roundDurationSeekBar.isEnabled) {
+                GameSettingsRepository.setRoundDuration(ctx, p + 1)
+            }
+            p + 1
+        }
+        setupSeekBar(binding.bonusIntervalSeekBar, binding.bonusIntervalLabel, com.example.beatles.R.string.settings_bonus_interval_format) { p ->
+            if (!isUpdatingUi && binding.bonusIntervalSeekBar.isEnabled) {
+                GameSettingsRepository.setBonusInterval(ctx, p + 1)
+            }
+            p + 1
+        }
+    }
+
+    private fun setupSeekBar(seekBar: SeekBar, label: TextView, formatResId: Int, valueMapper: (Int) -> Int) {
+        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                label.text = getString(formatResId, valueMapper(progress))
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
+        label.text = getString(formatResId, valueMapper(seekBar.progress))
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+}

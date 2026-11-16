@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.work.*
 import com.example.beatles.domain.GoldRateError
 import com.example.beatles.domain.GoldRateResult
-import com.example.beatles.repository.GoldRateRepositoryProvider
+import com.example.beatles.data.repository.GoldRateRepositoryProvider
 import com.example.beatles.widget.GoldRateWidgetUpdater
 import java.util.concurrent.TimeUnit
 

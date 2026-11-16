@@ -26,7 +26,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.example.beatles.R
 import com.example.beatles.domain.GoldRate
-import com.example.beatles.repository.GoldRateRepositoryProvider
+import com.example.beatles.data.repository.GoldRateRepositoryProvider
 import java.time.format.DateTimeFormatter
 
 private val DATE_FMT = DateTimeFormatter.ofPattern("dd.MM.yyyy")
