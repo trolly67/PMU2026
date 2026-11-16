@@ -40,7 +40,10 @@ android {
 dependencies {
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.savedstate)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
@@ -55,6 +58,8 @@ dependencies {
     implementation(libs.work.runtime)
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.workmanager)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
